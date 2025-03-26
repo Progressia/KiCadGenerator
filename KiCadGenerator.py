@@ -1,6 +1,14 @@
 import tkinter as tk
 from tkinter import filedialog, messagebox
 import os
+import json
+
+# Wczytaj template.json przy starcie
+try:
+    with open("template.json", "r", encoding="utf-8") as f:
+        sample_json = f.read()
+except FileNotFoundError:
+    sample_json = "// template.json not found"
 
 class KiCadSchGenerator(tk.Tk):
     def __init__(self):
@@ -25,7 +33,7 @@ class KiCadSchGenerator(tk.Tk):
         tk.Label(self, text="Treść pliku .kicad_sch:").pack(pady=(10, 0))
         self.text_area = tk.Text(self, wrap="word", height=15)
         self.text_area.pack(expand=True, fill="both", padx=10, pady=5)
-        self.text_area.insert("1.0", "Helloworld")
+        self.text_area.insert("1.0", sample_json)
 
         # B. Skróty Ctrl+C / Ctrl+V
         self.text_area.bind("<Control-c>", lambda e: self.copy_text())
@@ -61,10 +69,10 @@ class KiCadSchGenerator(tk.Tk):
         try:
             with open(filename, "w", encoding="utf-8") as f:
                 f.write(content)
-            messagebox.showinfo("Sukces", f"Plik '{filename}' został wygenerowany.")
+            messagebox.showinfo("Sukces", f"Plik '{filename}' został zapisany.")
         except Exception as e:
             messagebox.showerror("Błąd", f"Nie udało się zapisać pliku: {e}")
-
+            
 if __name__ == "__main__":
     app = KiCadSchGenerator()
     app.mainloop()
