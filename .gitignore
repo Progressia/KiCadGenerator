@@ -1,5 +1,6 @@
 # Ignoruj wygenerowane pliki KiCada
 *.kicad_sch
+*.lck
 
 # Ignoruj foldery tymczasowe lub robocze
 .vscode/

@@ -21,7 +21,7 @@ class KiCadSchGenerator(tk.Tk):
         path_frame = tk.Frame(self)
         path_frame.pack(pady=(10, 0), padx=10, fill="x")
 
-        tk.Label(path_frame, text="Ścieżka do symboli KiCad:").pack(side="left")
+        tk.Label(path_frame, text="KiCad lib:").pack(side="left")
         self.path_entry = tk.Entry(path_frame, width=50)
         self.path_entry.pack(side="left", padx=5, expand=True, fill="x")
         self.path_entry.insert(0, "/usr/share/kicad/symbols")
@@ -30,7 +30,7 @@ class KiCadSchGenerator(tk.Tk):
         path_button.pack(side="left")
 
         # C. Duże pole tekstowe z przykładowym tekstem
-        tk.Label(self, text="Treść pliku .kicad_sch:").pack(pady=(10, 0))
+        tk.Label(self, text="JSON template:").pack(pady=(10, 0))
         self.text_area = tk.Text(self, wrap="word", height=15)
         self.text_area.pack(expand=True, fill="both", padx=10, pady=5)
         self.text_area.insert("1.0", sample_json)
