@@ -5,8 +5,6 @@
   "uuid": "GENERATED-DYNAMICZNIE",
   "paper": "A3",
   "title": "Simple RC Circuit",
-  "lib_symbols": [
-  ],
   "components": [
     {
       "type": "resistor",
