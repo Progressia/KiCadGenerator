@@ -150,7 +150,10 @@ class KiCadSchGenerator(tk.Tk):
             try:
                 content = self.text_area.get("1.0", tk.END).strip()
                 data = json.loads(content)
-                data["lib_symbols"] = []  # dodaj pustą sekcję lib_symbols
+                if "lib_symbols" not in data:
+                    data["lib_symbols"] = []
+                if "symbols" not in data:
+                    data["symbols"] = []
                 updated = json.dumps(data, indent=2)
                 self.text_area.delete("1.0", tk.END)
                 self.text_area.insert("1.0", updated)
@@ -160,11 +163,22 @@ class KiCadSchGenerator(tk.Tk):
 
         add_window = tk.Toplevel(self)
         add_window.title("Dodaj komponent")
-        add_window.geometry("300x200")
+        add_window.geometry("300x250")
 
-        tk.Label(add_window, text="Dodaj sekcję lib_symbols do JSON").pack(pady=20)
-        tk.Button(add_window, text="Component", command=confirm_add).pack(pady=10)
-        tk.Button(add_window, text="Anuluj", command=add_window.destroy).pack()
+        tk.Label(add_window, text="Wybierz typ elementu:").pack(pady=(10, 5))
+        selected_type = tk.StringVar(value="symbol")
+        tk.Radiobutton(add_window, text="Symbol", variable=selected_type, value="symbol").pack(anchor="w", padx=20)
+        tk.Radiobutton(add_window, text="Module", variable=selected_type, value="module").pack(anchor="w", padx=20)
+
+        # Tu w przyszłości różne formularze zależnie od wyboru
+        content_frame = tk.Frame(add_window)
+        content_frame.pack(pady=10)
+        tk.Label(content_frame, text="(Tutaj dynamiczne pola wyboru)").pack()
+
+        button_frame = tk.Frame(add_window)
+        button_frame.pack(pady=10)
+        tk.Button(button_frame, text="OK", command=confirm_add).pack(side="left", padx=10)
+        tk.Button(button_frame, text="Cancel", command=add_window.destroy).pack(side="left")
 
 if __name__ == "__main__":
     app = KiCadSchGenerator()
