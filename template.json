@@ -5,6 +5,24 @@
   "uuid": "GENERATED-DYNAMICZNIE",
   "paper": "A3",
   "title": "Simple RC Circuit",
+  "lib_symbols": [
+    {
+      "name": "Device:C",
+      "description": "Unpolarized capacitor",
+      "keywords": "cap capacitor",
+      "fp_filters": "C_*",
+      "reference": "C",
+      "value": "C"
+    },
+    {
+      "name": "Device:R",
+      "description": "Resistor",
+      "keywords": "R res resistor",
+      "fp_filters": "R_*",
+      "reference": "R",
+      "value": "R"
+    }
+  ],
   "components": [
     {
       "type": "resistor",

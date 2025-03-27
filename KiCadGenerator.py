@@ -2,6 +2,8 @@ import tkinter as tk
 from tkinter import filedialog, messagebox
 import os
 import json
+import uuid
+from datetime import datetime
 
 # Wczytaj template.json przy starcie
 try:
@@ -88,9 +90,30 @@ class KiCadSchGenerator(tk.Tk):
 
     def transfer_text(self):
         content = self.text_area.get("1.0", tk.END).strip()
+        try:
+            data = json.loads(content)
+        except json.JSONDecodeError as e:
+            messagebox.showerror("Błąd JSON", f"Nieprawidłowy JSON: {e}")
+            return
+
+        # Aktualizacja pól nagłówka
+        version = datetime.now().strftime("%Y%m%d")
+        unique_id = str(uuid.uuid4())
+
+        lines = [
+            f"(kicad_sch",
+            f"  (version 20250114)",
+            f"  (generator \"{data.get('generator', 'eeschema')}\")",
+            f"  (generator_version \"{data.get('generator_version', '9.0')}\")",
+            f"  (uuid \"{unique_id}\")",
+            f"  (paper \"{data.get('paper', 'A3')}\")",
+            ")"
+        ]
+
+        # Wstaw wygenerowany tekst do pola output
         self.output_area.config(state="normal")
         self.output_area.delete("1.0", tk.END)
-        self.output_area.insert("1.0", content)
+        self.output_area.insert("1.0", "\n".join(lines))
         self.output_area.config(state="normal")
 
     def save_file(self):
