@@ -1,23 +1,27 @@
 {
-    "title": "Simple RC Circuit",
-    "components": [
-      {
-        "type": "resistor",
-        "value": "10k",
-        "ref": "R1",
-        "position": [10, 20]
-      },
-      {
-        "type": "capacitor",
-        "value": "100nF",
-        "ref": "C1",
-        "position": [30, 20]
-      }
-    ],
-    "connections": [
-      ["R1", "1", "C1", "1"],
-      ["R1", "2", "GND"],
-      ["C1", "2", "VCC"]
-    ]
-  }
-  
+  "version": "20250327",
+  "generator": "eeschema",
+  "generator_version": "9.0",
+  "uuid": "GENERATED-DYNAMICZNIE",
+  "paper": "A3",
+  "title": "Simple RC Circuit",
+  "components": [
+    {
+      "type": "resistor",
+      "value": "10k",
+      "ref": "R1",
+      "position": [10, 20]
+    },
+    {
+      "type": "capacitor",
+      "value": "100nF",
+      "ref": "C1",
+      "position": [30, 20]
+    }
+  ],
+  "connections": [
+    ["R1", "1", "C1", "1"],
+    ["R1", "2", "GND"],
+    ["C1", "2", "VCC"]
+  ]
+}
