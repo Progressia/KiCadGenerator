@@ -96,24 +96,22 @@ class KiCadSchGenerator(tk.Tk):
             messagebox.showerror("Błąd JSON", f"Nieprawidłowy JSON: {e}")
             return
 
-        # Aktualizacja pól nagłówka
-        version = datetime.now().strftime("%Y%m%d")
-        unique_id = str(uuid.uuid4())
+        lib_section = self.generate_lib_symbols(data.get("lib_symbols", [])) if "lib_symbols" in data else ""
 
-        lines = [
-            f"(kicad_sch",
-            f"  (version 20250114)",
-            f"  (generator \"{data.get('generator', 'eeschema')}\")",
-            f"  (generator_version \"{data.get('generator_version', '9.0')}\")",
-            f"  (uuid \"{unique_id}\")",
-            f"  (paper \"{data.get('paper', 'A3')}\")",
-            ")"
-        ]
+        final_output = f"""(kicad_sch
+  (version {data.get("version", "20250114")})
+  (generator \"{data.get("generator", "eeschema")}\")
+  (generator_version \"{data.get("generator_version", "9.0")}\")
+  (uuid \"{str(uuid.uuid4())}\")
+  (paper \"{data.get("paper", "A3")}\")
 
-        # Wstaw wygenerowany tekst do pola output
+  {lib_section}
+)
+"""
+
         self.output_area.config(state="normal")
         self.output_area.delete("1.0", tk.END)
-        self.output_area.insert("1.0", "\n".join(lines))
+        self.output_area.insert("1.0", final_output)
         self.output_area.config(state="normal")
 
     def save_file(self):
@@ -126,40 +124,47 @@ class KiCadSchGenerator(tk.Tk):
         except Exception as e:
             messagebox.showerror("Błąd", f"Nie udało się zapisać pliku: {e}")
 
+    def generate_lib_symbols(self, lib_symbols):
+        result = ["(lib_symbols"]
+        for sym in lib_symbols:
+            result.append(f'  (symbol "{sym["name"]}")')
+            result.append('    (pin_numbers (hide yes))')
+            result.append('    (pin_names (offset 0))')
+            result.append('    (exclude_from_sim no)')
+            result.append('    (in_bom yes)')
+            result.append('    (on_board yes)')
+            result.append(f'    (property "Reference" "{sym["reference"]}" (at 0 0 0) (effects (font (size 1.27 1.27)) (hide yes)))')
+            result.append(f'    (property "Value" "{sym["value"]}" (at 0 0 0) (effects (font (size 1.27 1.27)) (hide yes)))')
+            result.append(f'    (property "Footprint" "" (at 0 0 0) (effects (font (size 1.27 1.27)) (hide yes)))')
+            result.append(f'    (property "Datasheet" "~" (at 0 0 0) (effects (font (size 1.27 1.27)) (hide yes)))')
+            result.append(f'    (property "Description" "{sym["description"]}" (at 0 0 0) (effects (font (size 1.27 1.27)) (hide yes)))')
+            result.append(f'    (property "ki_keywords" "{sym["keywords"]}" (at 0 0 0) (effects (font (size 1.27 1.27)) (hide yes)))')
+            result.append(f'    (property "ki_fp_filters" "{sym["fp_filters"]}" (at 0 0 0) (effects (font (size 1.27 1.27)) (hide yes)))')
+            result.append('    (embedded_fonts no)')
+            result.append('  )')
+        result.append(')')
+        return "\n".join(result)
+
     def open_add_window(self):
+        def confirm_add():
+            try:
+                content = self.text_area.get("1.0", tk.END).strip()
+                data = json.loads(content)
+                data["lib_symbols"] = []  # dodaj pustą sekcję lib_symbols
+                updated = json.dumps(data, indent=2)
+                self.text_area.delete("1.0", tk.END)
+                self.text_area.insert("1.0", updated)
+                add_window.destroy()
+            except json.JSONDecodeError:
+                messagebox.showerror("Błąd", "Nieprawidłowy JSON")
+
         add_window = tk.Toplevel(self)
         add_window.title("Dodaj komponent")
         add_window.geometry("300x200")
-        # Opcje trybu dodawania
-        self.add_mode = tk.StringVar(value="component")  # domyślnie component
 
-        radio_frame = tk.Frame(add_window)
-        radio_frame.pack(pady=(10, 5))
-
-        tk.Radiobutton(radio_frame, text="Component", variable=self.add_mode, value="component", command=self.update_add_form).pack(side="left", padx=5)
-        tk.Radiobutton(radio_frame, text="Connection", variable=self.add_mode, value="connection", command=self.update_add_form).pack(side="left", padx=5)
-        tk.Radiobutton(radio_frame, text="Module", variable=self.add_mode, value="module", command=self.update_add_form).pack(side="left", padx=5)
-
-        # Kontener na formularz (będzie się zmieniać dynamicznie)
-        self.form_frame = tk.Frame(add_window)
-        self.form_frame.pack(pady=10, fill="both", expand=True)
-
-        # Wywołaj pierwszy raz, żeby zainicjować widok
-        self.update_add_form()
-
-    def update_add_form(self):
-        # Wyczyść poprzednie elementy formularza
-        for widget in self.form_frame.winfo_children():
-            widget.destroy()
-
-        mode = self.add_mode.get()
-
-        if mode == "component":
-            tk.Label(self.form_frame, text="Dodawanie komponentu (TODO)").pack()
-        elif mode == "connection":
-            tk.Label(self.form_frame, text="Dodawanie połączenia (TODO)").pack()
-        elif mode == "module":
-            tk.Label(self.form_frame, text="Dodawanie modułu (TODO)").pack()
+        tk.Label(add_window, text="Dodaj sekcję lib_symbols do JSON").pack(pady=20)
+        tk.Button(add_window, text="Component", command=confirm_add).pack(pady=10)
+        tk.Button(add_window, text="Anuluj", command=add_window.destroy).pack()
 
 if __name__ == "__main__":
     app = KiCadSchGenerator()
