@@ -61,8 +61,8 @@ class KiCadSchGenerator(tk.Tk):
         self.output_area.pack(expand=True, fill="both")
 
         # Skróty Ctrl+C / Ctrl+V
-        self.text_area.bind("<Control-c>", lambda e: self.copy_text())
-        self.text_area.bind("<Control-v>", lambda e: self.paste_text())
+        self.text_area.bind("<Control-c>", self.copy_text)
+        self.text_area.bind("<Control-v>", self.paste_text)
 
         # Przycisk Save
         save_button = tk.Button(self, text="Save .kicad_sch", command=self.save_file)
@@ -74,21 +74,26 @@ class KiCadSchGenerator(tk.Tk):
             self.path_entry.delete(0, tk.END)
             self.path_entry.insert(0, selected_path)
 
-    def copy_text(self):
+    def copy_text(self, event=None):
         try:
             selected_text = self.text_area.get(tk.SEL_FIRST, tk.SEL_LAST)
             self.clipboard_clear()
             self.clipboard_append(selected_text)
         except tk.TclError:
             pass
+        return "break"
 
-    def paste_text(self):
+    def paste_text(self, event=None):
         try:
             self.text_area.insert(tk.INSERT, self.clipboard_get())
         except tk.TclError:
             pass
+        return "break"
 
     def transfer_text(self):
+        self.generate_from_json()
+
+    def generate_from_json(self):
         content = self.text_area.get("1.0", tk.END).strip()
         try:
             data = json.loads(content)
@@ -125,50 +130,68 @@ class KiCadSchGenerator(tk.Tk):
             messagebox.showerror("Błąd", f"Nie udało się zapisać pliku: {e}")
 
     def generate_lib_symbols(self, lib_symbols):
-        result = ["(lib_symbols"]
-        for sym in lib_symbols:
-            result.append(f'  (symbol "{sym["name"]}")')
-            result.append('    (pin_numbers (hide yes))')
-            result.append('    (pin_names (offset 0))')
-            result.append('    (exclude_from_sim no)')
-            result.append('    (in_bom yes)')
-            result.append('    (on_board yes)')
-            result.append(f'    (property "Reference" "{sym["reference"]}" (at 0 0 0) (effects (font (size 1.27 1.27)) (hide yes)))')
-            result.append(f'    (property "Value" "{sym["value"]}" (at 0 0 0) (effects (font (size 1.27 1.27)) (hide yes)))')
-            result.append(f'    (property "Footprint" "" (at 0 0 0) (effects (font (size 1.27 1.27)) (hide yes)))')
-            result.append(f'    (property "Datasheet" "~" (at 0 0 0) (effects (font (size 1.27 1.27)) (hide yes)))')
-            result.append(f'    (property "Description" "{sym["description"]}" (at 0 0 0) (effects (font (size 1.27 1.27)) (hide yes)))')
-            result.append(f'    (property "ki_keywords" "{sym["keywords"]}" (at 0 0 0) (effects (font (size 1.27 1.27)) (hide yes)))')
-            result.append(f'    (property "ki_fp_filters" "{sym["fp_filters"]}" (at 0 0 0) (effects (font (size 1.27 1.27)) (hide yes)))')
-            result.append('    (embedded_fonts no)')
-            result.append('  )')
-        result.append(')')
-        return "\n".join(result)
+        result = "(lib_symbols\n"
+        for entry in lib_symbols:
+            result += f"  (symbol \"{entry['name']}\"\n"
+            result += f"    (pin_numbers {entry['pin_numbers']})\n"
+            result += f"    (pin_names {entry['pin_names']})\n"
+            result += f"    (exclude_from_sim {entry['exclude_from_sim']})\n"
+            result += f"    (in_bom {entry['in_bom']})\n"
+            result += f"    (on_board {entry['on_board']})\n"
+            result += f"    (property {entry['reference']})\n"
+            result += f"    (property {entry['value']})\n"
+            result += f"    (property {entry['footprint']})\n"
+            result += f"    (property {entry['datasheet']})\n"
+            result += f"    (property {entry['description']})\n"
+            result += f"    (property {entry['ki_keywords']})\n"
+            result += f"    (property {entry['ki_fp_filters']})\n"
+            result += f"    (symbol {entry['symbol']})\n"
+            result += f"    (symbol {entry['pins']})\n"
+            result += f"    (embedded_fonts {entry['embedded_fonts']})\n"
+            result += f"  )\n"
+        result += ")"
+        return result
 
     def open_add_window(self):
         add_window = tk.Toplevel(self)
         add_window.title("Dodaj komponent")
-        add_window.geometry("300x250")
+        add_window.geometry("400x500")
 
         tk.Label(add_window, text="Wybierz typ elementu:").pack(pady=(10, 5))
-        selected_type = tk.StringVar(value="symbol")
+        selected_type = tk.StringVar(value="lib_symbol")
 
         radio_frame = tk.Frame(add_window)
         radio_frame.pack(pady=5)
 
         content_frame = tk.Frame(add_window)
-        content_frame.pack(pady=10)
+        content_frame.pack(pady=10, fill="both", expand=True)
+
+        lib_entries = {}
 
         def update_content():
             for widget in content_frame.winfo_children():
                 widget.destroy()
-            if selected_type.get() == "symbol":
-                tk.Label(content_frame, text="Dodajesz SYMBOL").pack()
-            elif selected_type.get() == "module":
-                tk.Label(content_frame, text="Dodajesz MODULE").pack()
+            lib_entries.clear()
+            if selected_type.get() == "lib_symbol":
+                fields = [
+                    "name", "pin_numbers", "pin_names", "exclude_from_sim",
+                    "in_bom", "on_board", "reference", "value", "footprint",
+                    "datasheet", "description", "ki_keywords", "ki_fp_filters",
+                    "symbol", "pins", "embedded_fonts"
+                ]
+                for field in fields:
+                    row = tk.Frame(content_frame)
+                    row.pack(fill="x", pady=2)
+                    tk.Label(row, text=field + ":", width=15, anchor="w").pack(side="left")
+                    entry = tk.Entry(row)
+                    entry.pack(side="left", expand=True, fill="x")
+                    lib_entries[field] = entry
+            else:
+                tk.Label(content_frame, text=f"Dodajesz {selected_type.get().upper()}").pack()
 
-        tk.Radiobutton(radio_frame, text="Symbol", variable=selected_type, value="symbol", command=update_content).pack(side="left", padx=10)
-        tk.Radiobutton(radio_frame, text="Module", variable=selected_type, value="module", command=update_content).pack(side="left", padx=10)
+        tk.Radiobutton(radio_frame, text="Lib Symbol", variable=selected_type, value="lib_symbol", command=update_content).pack(side="left", padx=5)
+        tk.Radiobutton(radio_frame, text="Symbol", variable=selected_type, value="symbol", command=update_content).pack(side="left", padx=5)
+        tk.Radiobutton(radio_frame, text="Module", variable=selected_type, value="module", command=update_content).pack(side="left", padx=5)
 
         update_content()
 
@@ -176,13 +199,21 @@ class KiCadSchGenerator(tk.Tk):
             try:
                 content = self.text_area.get("1.0", tk.END).strip()
                 data = json.loads(content)
-                if "lib_symbols" not in data:
-                    data["lib_symbols"] = []
-                if "symbols" not in data:
-                    data["symbols"] = []
+
+                if selected_type.get() == "lib_symbol":
+                    new_lib_symbol = {field: lib_entries[field].get() for field in lib_entries}
+                    if "lib_symbols" not in data:
+                        data["lib_symbols"] = []
+                    data["lib_symbols"].append(new_lib_symbol)
+
+                elif selected_type.get() == "symbol":
+                    if "symbols" not in data:
+                        data["symbols"] = []
+
                 updated = json.dumps(data, indent=2)
                 self.text_area.delete("1.0", tk.END)
                 self.text_area.insert("1.0", updated)
+                self.generate_from_json()  # automatyczna konwersja JSON -> kicad_sch
                 add_window.destroy()
             except json.JSONDecodeError:
                 messagebox.showerror("Błąd", "Nieprawidłowy JSON")
