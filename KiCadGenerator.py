@@ -146,6 +146,32 @@ class KiCadSchGenerator(tk.Tk):
         return "\n".join(result)
 
     def open_add_window(self):
+        add_window = tk.Toplevel(self)
+        add_window.title("Dodaj komponent")
+        add_window.geometry("300x250")
+
+        tk.Label(add_window, text="Wybierz typ elementu:").pack(pady=(10, 5))
+        selected_type = tk.StringVar(value="symbol")
+
+        radio_frame = tk.Frame(add_window)
+        radio_frame.pack(pady=5)
+
+        content_frame = tk.Frame(add_window)
+        content_frame.pack(pady=10)
+
+        def update_content():
+            for widget in content_frame.winfo_children():
+                widget.destroy()
+            if selected_type.get() == "symbol":
+                tk.Label(content_frame, text="Dodajesz SYMBOL").pack()
+            elif selected_type.get() == "module":
+                tk.Label(content_frame, text="Dodajesz MODULE").pack()
+
+        tk.Radiobutton(radio_frame, text="Symbol", variable=selected_type, value="symbol", command=update_content).pack(side="left", padx=10)
+        tk.Radiobutton(radio_frame, text="Module", variable=selected_type, value="module", command=update_content).pack(side="left", padx=10)
+
+        update_content()
+
         def confirm_add():
             try:
                 content = self.text_area.get("1.0", tk.END).strip()
@@ -160,20 +186,6 @@ class KiCadSchGenerator(tk.Tk):
                 add_window.destroy()
             except json.JSONDecodeError:
                 messagebox.showerror("Błąd", "Nieprawidłowy JSON")
-
-        add_window = tk.Toplevel(self)
-        add_window.title("Dodaj komponent")
-        add_window.geometry("300x250")
-
-        tk.Label(add_window, text="Wybierz typ elementu:").pack(pady=(10, 5))
-        selected_type = tk.StringVar(value="symbol")
-        tk.Radiobutton(add_window, text="Symbol", variable=selected_type, value="symbol").pack(anchor="w", padx=20)
-        tk.Radiobutton(add_window, text="Module", variable=selected_type, value="module").pack(anchor="w", padx=20)
-
-        # Tu w przyszłości różne formularze zależnie od wyboru
-        content_frame = tk.Frame(add_window)
-        content_frame.pack(pady=10)
-        tk.Label(content_frame, text="(Tutaj dynamiczne pola wyboru)").pack()
 
         button_frame = tk.Frame(add_window)
         button_frame.pack(pady=10)
