@@ -2,8 +2,8 @@ import tkinter as tk
 from tkinter import filedialog
 import json
 import os
-from lib.parser import parse_kicad_sym, parse_kicad_sch
-from lib.utils import create_context_menu
+from lib.parser import *
+from lib.utils import *
 
 class KiCadSymbolImporter(tk.Tk):
     def __init__(self):
@@ -47,7 +47,9 @@ class KiCadSymbolImporter(tk.Tk):
 
         # Obsługa menu kontekstowego
         create_context_menu(self.text_area_raw)
+        enable_shortcuts(self.text_area_raw)
         create_context_menu(self.text_area_json)
+        enable_shortcuts(self.text_area_json)
 
     def import_file(self):
         file_path = filedialog.askopenfilename(
@@ -65,9 +67,11 @@ class KiCadSymbolImporter(tk.Tk):
                 parsed = {}
 
                 if ext == ".kicad_sym":
-                    parsed = parse_kicad_sym(content)
+                    # parsed = parse_kicad_sym(content)
+                    parsed = parse_kicad_sym_sexp(content)
                 elif ext == ".kicad_sch":
-                    parsed = parse_kicad_sch(content)
+                    # parsed = parse_kicad_sch(content)
+                    parsed = parse_kicad_sch_sexp(content)
                 else:
                     parsed = {"error": "Nieobsługiwane rozszerzenie."}
 
