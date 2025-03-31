@@ -4,4 +4,4 @@
 
 # Ignoruj foldery tymczasowe lub robocze
 .vscode/
-
+*.txt
