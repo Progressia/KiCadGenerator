@@ -53,7 +53,8 @@ class KiCadSymbolImporter(tk.Tk):
 
     def import_file(self):
         file_path = filedialog.askopenfilename(
-            initialdir="/usr/share/kicad/symbols/",
+            # initialdir="/usr/share/kicad/symbols/",
+            initialdir="/home/dell/PROGRESSIA/desktop/KiCadGenerator/",
             filetypes=[("KiCad Files", "*.kicad_sym *.kicad_sch"), ("All Files", "*.*")]
         )
         if file_path:
@@ -68,7 +69,8 @@ class KiCadSymbolImporter(tk.Tk):
 
                 if ext == ".kicad_sym":
                     # parsed = parse_kicad_sym(content)
-                    parsed = parse_kicad_sym_sexp(content)
+                    # parsed = parse_kicad_sym_sexp(content)
+                    parsed = parse_kicad_sch_sexp(content)
                 elif ext == ".kicad_sch":
                     # parsed = parse_kicad_sch(content)
                     parsed = parse_kicad_sch_sexp(content)
