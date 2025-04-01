@@ -3,14 +3,49 @@ from sexpdata import loads, Symbol
 
 # Słowa-klucze do ekstrakcji bloków i ich pól
 KEYWORDS = {
-    "meta": ["version", "generator", "generator_version", "uuid", "paper", "title", "embedded_fonts" ],
+    "meta": ["version", "generator", "generator_version", "uuid", "paper", "title"],
     "lib_symbols": ["symbol"],
-    "symbol": ["lib_id", "at", "property", "uuid"],
-    "sheet_instances": ["path", "page"],
-    "wire": ["pts", "stroke"],
-    "text": ["at", "effects", "text"],
-    "connection": ["pinref", "at"]
+    "symbols": ["lib_id", "at", "property", "uuid"]
 }
+
+def parse_kicad_sym(raw_text):
+    symbols = []
+    symbol_blocks = re.findall(r'\(symbol\s+"[^"]+".*?\n\)', raw_text, re.DOTALL)
+
+    for block in symbol_blocks:
+        name_match = re.search(r'\(symbol\s+"([^"]+)"', block)
+        name = name_match.group(1) if name_match else "Unnamed"
+        symbols.append({
+            "name": name,
+            "raw": block.strip()
+        })
+
+    return {
+        "symbols": symbols
+    }
+
+def parse_kicad_text(raw_text, sections=["meta", "lib_symbols", "symbols"]):
+    try:
+        sexp = loads(raw_text)
+        result = {}
+
+        # METADANE (z poziomu root tree, nie flat)
+        if "meta" in sections and "meta" in KEYWORDS:
+            result["meta"] = extract_meta_fields(sexp, KEYWORDS["meta"])
+
+        # Pozostałe sekcje wymagają spłaszczonego drzewa
+        flat_tree = parse_sexp_tree_flat(sexp)
+
+        for section in sections:
+            if section == "meta" or section not in KEYWORDS:
+                continue
+            blocks = extract_blocks(flat_tree, "symbol") if section == "symbols" else extract_blocks(flat_tree, section)
+            result[section] = [extract_fields_from_block(b, KEYWORDS[section]) for b in blocks]
+
+        return result
+
+    except Exception as e:
+        return {"error": f"Nie udało się sparsować pliku przez sexpdata: {e}"}
 
 def parse_sexp_tree_flat(sexp):
     if isinstance(sexp, list):
@@ -25,10 +60,10 @@ def flatten_symbol_line(symbol_data):
         return " ".join(str(item) if not isinstance(item, list) else flatten_symbol_line(item) for item in symbol_data)
     return str(symbol_data)
 
-def extract_blocks(flat_tree, keyword="symbol"):
+def extract_blocks(flat_tree, section="symbol"):
     results = []
     for item in flat_tree:
-        if isinstance(item, list) and len(item) > 0 and item[0] == keyword:
+        if isinstance(item, list) and len(item) > 0 and item[0] == section:
             results.append(item)
     return results
 
@@ -49,27 +84,3 @@ def extract_meta_fields(sexp_tree, fields):
             if key in fields:
                 result[key] = item[1] if len(item) > 1 else None
     return result
-
-def parse_kicad_sym_sexp(raw_text):
-    try:
-        sexp = loads(raw_text)
-        flat = parse_sexp_tree_flat(sexp)
-        lib_symbols = extract_blocks(flat, "lib_symbols")
-        symbols = extract_blocks(flat, "symbol")
-        parsed2 = [extract_fields_from_block(s, KEYWORDS["lib_symbols"]) for s in lib_symbols]
-        parsed = [extract_fields_from_block(s, KEYWORDS["symbol"]) for s in symbols]
-        return {"meta": extract_meta_fields(sexp, KEYWORDS["meta"]), "lib_symbols": parsed2, "symbols": parsed}
-    except Exception as e:
-        return {"error": f"Nie udało się sparsować .kicad_sym przez sexpdata: {e}"}
-
-def parse_kicad_sch_sexp(raw_text):
-    try:
-        sexp = loads(raw_text)
-        flat = parse_sexp_tree_flat(sexp)
-        lib_symbols = extract_blocks(flat, "lib_symbols")
-        symbols = extract_blocks(flat, "symbol")
-        parsed2 = [extract_fields_from_block(s, KEYWORDS["lib_symbols"]) for s in lib_symbols]
-        parsed = [extract_fields_from_block(s, KEYWORDS["symbol"]) for s in symbols]
-        return {"meta": extract_meta_fields(sexp, KEYWORDS["meta"]), "lib_symbols": parsed2, "symbols": parsed}
-    except Exception as e:
-        return {"error": f"Nie udało się sparsować .kicad_sch przez sexpdata: {e}"}

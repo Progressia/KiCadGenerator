@@ -67,13 +67,20 @@ class KiCadSymbolImporter(tk.Tk):
                 ext = os.path.splitext(file_path)[1]
                 parsed = {}
 
-                if ext == ".kicad_sym":
-                    parsed = parse_kicad_sym_sexp(content)
-                elif ext == ".kicad_sch":
-                    # parsed = parse_kicad_sch(content)
-                    parsed = parse_kicad_sch_sexp(content)
+                # if ext == ".kicad_sym":
+                #     parsed = parse_kicad_sym_sexp(content)
+                # elif ext == ".kicad_sch":
+                #     # parsed = parse_kicad_sch(content)
+                #     parsed = parse_kicad_sch_sexp(content)
+                if ext == (".kicad_sch"):
+                    sections = ["meta", "lib_symbols", "symbols"]
+                elif ext == (".kicad_sym"):
+                    sections = ["meta", "lib_symbols"]
                 else:
                     parsed = {"error": "Nieobsługiwane rozszerzenie."}
+                    return
+
+                parsed = parse_kicad_text(content, sections)
 
                 self.text_area_json.delete("1.0", tk.END)
                 self.text_area_json.insert("1.0", json.dumps(parsed, indent=2))
