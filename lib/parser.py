@@ -8,22 +8,6 @@ KEYWORDS = {
     "symbols": ["lib_id", "at", "property", "uuid"]
 }
 
-def parse_kicad_sym(raw_text):
-    symbols = []
-    symbol_blocks = re.findall(r'\(symbol\s+"[^"]+".*?\n\)', raw_text, re.DOTALL)
-
-    for block in symbol_blocks:
-        name_match = re.search(r'\(symbol\s+"([^"]+)"', block)
-        name = name_match.group(1) if name_match else "Unnamed"
-        symbols.append({
-            "name": name,
-            "raw": block.strip()
-        })
-
-    return {
-        "symbols": symbols
-    }
-
 def parse_kicad_text(raw_text, sections=["meta", "lib_symbols", "symbols"]):
     try:
         sexp = loads(raw_text)
