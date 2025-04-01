@@ -1,64 +1,69 @@
-# # Słowa-klucze do ekstrakcji bloków i ich pól
-# KEYWORDS = {
-#     "symbol": ["lib_id", "at", "property", "uuid"],
-#     "wire": ["pts", "stroke"],
-#     "text": ["at", "effects", "text"],
-#     "connection": ["pinref", "at"]
-# }
-
-import copy
+import re
 from sexpdata import loads, Symbol
 
-# Załóżmy, że template_json to zawartość Twojego pliku template.json wczytana jako słownik
-template_json = {
-    "version": "20250114",
-    "generator": "eeschema",
-    "generator_version": "9.0",
-    "uuid": "GENERATED-DYNAMICZNIE",
-    "paper": "A3",
-    "title": "Simple RC Circuit",
-    "lib_symbols": [],
-    "symbols": []
+# Słowa-klucze do ekstrakcji bloków i ich pól
+KEYWORDS = {
+    "meta": ["version", "generator", "generator_version", "uuid", "paper", "title"],
+    "symbol": ["lib_id", "at", "property", "uuid"],
+    "wire": ["pts", "stroke"],
+    "text": ["at", "effects", "text"],
+    "connection": ["pinref", "at"]
 }
+
+def extract_meta_fields(sexp_tree, fields):
+    result = {}
+    for item in sexp_tree:
+        if isinstance(item, list) and len(item) > 0:
+            key = str(item[0])
+            if key in fields:
+                result[key] = item[1] if len(item) > 1 else None
+    return result
+
+def parse_sexp_tree_flat(sexp):
+    if isinstance(sexp, list):
+        return [parse_sexp_tree_flat(s) for s in sexp]
+    elif isinstance(sexp, Symbol):
+        return str(sexp)
+    else:
+        return sexp
+
+def flatten_symbol_line(symbol_data):
+    if isinstance(symbol_data, list):
+        return " ".join(str(item) if not isinstance(item, list) else flatten_symbol_line(item) for item in symbol_data)
+    return str(symbol_data)
+
+def extract_blocks(flat_tree, keyword="symbol"):
+    results = []
+    for item in flat_tree:
+        if isinstance(item, list) and len(item) > 0 and item[0] == keyword:
+            results.append(item)
+    return results
+
+def extract_fields_from_block(block, fields):
+    result = {}
+    for item in block:
+        if isinstance(item, list) and len(item) > 0:
+            key = str(item[0])
+            if key in fields:
+                result[key] = item[1:]
+    return result
+
+def parse_kicad_sym_sexp(raw_text):
+    try:
+        sexp = loads(raw_text)
+        flat = parse_sexp_tree_flat(sexp)
+        symbols = extract_blocks(flat, "symbol")
+        parsed = [extract_fields_from_block(s, KEYWORDS["symbol"]) for s in symbols]
+        return {"symbols": parsed}
+    except Exception as e:
+        return {"error": f"Nie udało się sparsować .kicad_sym przez sexpdata: {e}"}
 
 def parse_kicad_sch_sexp(raw_text):
     try:
-        # Parsowanie tekstu schematu KiCad do struktury S-expression
         sexp = loads(raw_text)
-        
-        # Tworzenie kopii szablonu, aby uniknąć modyfikacji oryginału
-        parsed_data = copy.deepcopy(template_json)
-        
-        # Przetwarzanie głównych elementów schematu
-        for item in sexp:
-            if isinstance(item, list) and item:
-                key = str(item[0])
-                if key == "lib_symbols":
-                    parsed_data["lib_symbols"] = process_lib_symbols(item[1:])
-                elif key == "symbol":
-                    parsed_data["symbols"].append(process_symbol(item[1:]))
-                else:
-                    # Obsługa innych kluczowych elementów schematu
-                    parsed_data[key] = item[1] if len(item) > 1 else None
-        
-        return parsed_data
+        flat = parse_sexp_tree_flat(sexp)
+        symbols = extract_blocks(flat, "symbol")
+        parsed = [extract_fields_from_block(s, KEYWORDS["symbol"]) for s in symbols]
+        return {"symbols": parsed}
     except Exception as e:
         return {"error": f"Nie udało się sparsować .kicad_sch przez sexpdata: {e}"}
-
-def process_lib_symbols(lib_symbols_data):
-    # Przetwarzanie danych lib_symbols
-    lib_symbols = []
-    for lib_symbol in lib_symbols_data:
-        if isinstance(lib_symbol, list):
-            lib_symbols.append(str(lib_symbol[0]))  # Przykładowe przetwarzanie
-    return lib_symbols
-
-def process_symbol(symbol_data):
-    # Przetwarzanie danych symbolu
-    symbol = {}
-    for item in symbol_data:
-        if isinstance(item, list) and item:
-            key = str(item[0])
-            value = item[1:] if len(item) > 1 else None
-            symbol[key] = value
-    return symbol

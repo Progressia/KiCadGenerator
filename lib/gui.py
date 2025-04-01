@@ -68,9 +68,7 @@ class KiCadSymbolImporter(tk.Tk):
                 parsed = {}
 
                 if ext == ".kicad_sym":
-                    # parsed = parse_kicad_sym(content)
-                    # parsed = parse_kicad_sym_sexp(content)
-                    parsed = parse_kicad_sch_sexp(content)
+                    parsed = parse_kicad_sym_sexp(content)
                 elif ext == ".kicad_sch":
                     # parsed = parse_kicad_sch(content)
                     parsed = parse_kicad_sch_sexp(content)
